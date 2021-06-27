@@ -104,10 +104,11 @@ impl<K, V> LinkedHashMap<K, V, std::collections::hash_map::RandomState>
     }
 
     #[inline]
-    pub fn push_front(&mut self, key: K, value: V) {
+    pub fn push_front(&mut self, key: K, value: V) -> Option<(&K, &V)> {
         unsafe {
             if let Some(node) = self.hash_map.get(&KeyPtr { k: &key }) {
                 replace(&mut (**node).value, value);
+                Some((&(**node).key, &(**node).value))
             } else {
                 let node = Node::into_ptr(Node {
                     key,
@@ -125,6 +126,7 @@ impl<K, V> LinkedHashMap<K, V, std::collections::hash_map::RandomState>
                 }
 
                 self.head = node;
+                None
             }
         }
     }
@@ -162,10 +164,11 @@ impl<K, V> LinkedHashMap<K, V, std::collections::hash_map::RandomState>
     }
 
     #[inline]
-    pub fn push_back(&mut self, key: K, value: V) {
+    pub fn push_back(&mut self, key: K, value: V) -> Option<(&K, &V)> {
         unsafe {
             if let Some(node) = self.hash_map.get(&KeyPtr { k: &key }) {
                 replace(&mut (**node).value, value);
+                Some((&(**node).key, &(**node).value))
             } else {
                 let node = Node::into_ptr(Node {
                     key,
@@ -181,6 +184,7 @@ impl<K, V> LinkedHashMap<K, V, std::collections::hash_map::RandomState>
                     self.head = node;
                 }
                 self.tail = node;
+                None
             }
         }
     }
@@ -281,7 +285,7 @@ impl<K, V> LinkedHashMap<K, V, std::collections::hash_map::RandomState>
     }
 
     #[inline]
-    pub fn insert(&mut self, key: K, value: V) {
+    pub fn insert(&mut self, key: K, value: V) -> Option<(&K, &V)> {
         self.push_back(key, value)
     }
 
@@ -393,7 +397,7 @@ impl<K, V> Extend<(K, V)> for LinkedHashMap<K, V>
 {
     fn extend<T: IntoIterator<Item=(K, V)>>(&mut self, iter: T) {
         for (k, v) in iter {
-            self.insert(k, v)
+            self.insert(k, v);
         }
     }
 }
