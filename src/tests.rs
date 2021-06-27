@@ -31,7 +31,10 @@ fn test_iter() {
     let mut map = LinkedHashMap::default();
     map.extend(vec![(1, 1), (2, 2), (3, 3)]);
     assert_eq!(
-        map.clone().into_iter().map(|(_, v)| v).collect::<Vec<i32>>(),
+        map.clone()
+            .into_iter()
+            .map(|(_, v)| v)
+            .collect::<Vec<i32>>(),
         vec![1, 2, 3]
     );
     assert_eq!(

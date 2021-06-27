@@ -1,3 +1,5 @@
+#![allow(clippy::not_unsafe_ptr_arg_deref)]
+
 use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
@@ -23,8 +25,8 @@ impl<Q: ?Sized> Qey<Q> {
 }
 
 impl<K, Q: ?Sized> Borrow<Qey<Q>> for KeyPtr<K>
-    where
-        K: Borrow<Q>,
+where
+    K: Borrow<Q>,
 {
     fn borrow(&self) -> &Qey<Q> {
         Qey::from_ref(unsafe { (*self.k).borrow() })
@@ -60,8 +62,8 @@ pub struct Node<K, V> {
 }
 
 impl<K, V> Node<K, V> {
-    pub fn into_ptr(self: Self) -> *mut Self {
-        Box::into_raw(Box::new(self))
+    pub fn into_ptr(_self: Self) -> *mut Self {
+        Box::into_raw(Box::new(_self))
     }
 }
 
@@ -86,8 +88,8 @@ impl<K, V, S> LinkedHashMap<K, V, S> {
 }
 
 impl<K, V> LinkedHashMap<K, V, std::collections::hash_map::RandomState>
-    where
-        K: Hash + Eq,
+where
+    K: Hash + Eq,
 {
     pub fn new() -> Self {
         LinkedHashMap {
@@ -144,10 +146,7 @@ impl<K, V> LinkedHashMap<K, V, std::collections::hash_map::RandomState>
 
                 self.hash_map
                     .remove(&KeyPtr { k: &(*node).key })
-                    .map(|node| {
-                        let node = Box::from_raw(node);
-                        node
-                    })
+                    .map(|node| Box::from_raw(node))
             })
             .flatten()
     }
@@ -202,10 +201,7 @@ impl<K, V> LinkedHashMap<K, V, std::collections::hash_map::RandomState>
 
                 self.hash_map
                     .remove(&KeyPtr { k: &(*node).key })
-                    .map(|node| {
-                        let node = Box::from_raw(node);
-                        node
-                    })
+                    .map(|node| Box::from_raw(node))
             })
             .flatten()
     }
@@ -228,9 +224,9 @@ impl<K, V> LinkedHashMap<K, V, std::collections::hash_map::RandomState>
 
     #[inline]
     pub fn get<Q: ?Sized>(&self, key: &Q) -> Option<&V>
-        where
-            K: Borrow<Q>,
-            Q: Hash + Eq,
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq,
     {
         self.hash_map
             .get(Qey::from_ref(key))
@@ -239,9 +235,9 @@ impl<K, V> LinkedHashMap<K, V, std::collections::hash_map::RandomState>
 
     #[inline]
     pub fn get_mut<Q: ?Sized>(&mut self, key: &Q) -> Option<&mut V>
-        where
-            K: Borrow<Q>,
-            Q: Hash + Eq,
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq,
     {
         self.hash_map
             .get_mut(Qey::from_ref(key))
@@ -250,9 +246,9 @@ impl<K, V> LinkedHashMap<K, V, std::collections::hash_map::RandomState>
 
     #[inline]
     pub fn remove<Q: ?Sized>(&mut self, key: &Q) -> Option<(K, V)>
-        where
-            K: Borrow<Q>,
-            Q: Hash + Eq,
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq,
     {
         self.hash_map.remove(Qey::from_ref(key)).map(|node| unsafe {
             self.remove_node(node);
@@ -264,23 +260,31 @@ impl<K, V> LinkedHashMap<K, V, std::collections::hash_map::RandomState>
     #[inline]
     pub fn remove_node(&mut self, node: *mut Node<K, V>) {
         unsafe {
-            self.head.map(|head| {
+            if let Some(head) = self.head {
                 if head == node {
-                    self.head = (*head).next;
+                    self.head = (*head).next
                 }
-            });
-            self.tail.map(|tail| {
+            }
+            if let Some(tail) = self.tail {
                 if tail == node {
-                    self.tail = (*tail).prev;
+                    self.tail = (*tail).prev
                 }
-            });
-            (*node).next.map(|next| (*next).prev = (*node).prev);
-            (*node).prev.map(|prev| (*prev).next = (*node).next);
+            }
+            if let Some(next) = (*node).next {
+                (*next).prev = (*node).prev
+            }
+            if let Some(prev) = (*node).prev {
+                (*prev).next = (*node).next
+            }
         }
     }
 
     #[inline]
-    pub fn take<Q: ?Sized>(&mut self, key: &Q) -> Option<(K, V)> where K: Borrow<Q>, Q: Hash + Eq {
+    pub fn take<Q: ?Sized>(&mut self, key: &Q) -> Option<(K, V)>
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq,
+    {
         self.remove(key)
     }
 
@@ -296,7 +300,7 @@ impl<K, V> LinkedHashMap<K, V, std::collections::hash_map::RandomState>
 
     #[inline]
     pub fn clear(&mut self) {
-        while let Some(_) = self.pop_back() {}
+        while self.pop_back().is_some() {}
     }
 
     #[inline]
@@ -318,7 +322,10 @@ impl<K, V> LinkedHashMap<K, V, std::collections::hash_map::RandomState>
     }
 }
 
-impl<K, V, S> Default for LinkedHashMap<K, V, S> where S: Default {
+impl<K, V, S> Default for LinkedHashMap<K, V, S>
+where
+    S: Default,
+{
     fn default() -> Self {
         LinkedHashMap {
             hash_map: HashMap::default(),
@@ -333,9 +340,13 @@ impl<K, V, S> Drop for LinkedHashMap<K, V, S> {
     fn drop(&mut self) {
         unsafe fn drop_node<K, V>(node: *mut Node<K, V>) {
             let node = Box::from_raw(node);
-            node.next.map(|node| drop_node(node));
+            if let Some(node) = node.next {
+                drop_node(node)
+            }
         }
-        self.head.map(|node| unsafe { drop_node(node) });
+        if let Some(node) = self.head {
+            unsafe { drop_node(node) }
+        }
     }
 }
 
@@ -373,7 +384,10 @@ impl<K, V> Iterator for IntoIter<K, V> {
     }
 }
 
-impl<K, V> IntoIterator for LinkedHashMap<K, V> where K: Hash + Eq {
+impl<K, V> IntoIterator for LinkedHashMap<K, V>
+where
+    K: Hash + Eq,
+{
     type Item = (K, V);
     type IntoIter = IntoIter<K, V>;
 
@@ -382,7 +396,10 @@ impl<K, V> IntoIterator for LinkedHashMap<K, V> where K: Hash + Eq {
     }
 }
 
-impl<'a, K, V> IntoIterator for &'a LinkedHashMap<K, V> where K: Hash + Eq {
+impl<'a, K, V> IntoIterator for &'a LinkedHashMap<K, V>
+where
+    K: Hash + Eq,
+{
     type Item = (&'a K, &'a V);
     type IntoIter = Iter<'a, K, V>;
 
@@ -392,10 +409,10 @@ impl<'a, K, V> IntoIterator for &'a LinkedHashMap<K, V> where K: Hash + Eq {
 }
 
 impl<K, V> Extend<(K, V)> for LinkedHashMap<K, V>
-    where
-        K: Hash + Eq,
+where
+    K: Hash + Eq,
 {
-    fn extend<T: IntoIterator<Item=(K, V)>>(&mut self, iter: T) {
+    fn extend<T: IntoIterator<Item = (K, V)>>(&mut self, iter: T) {
         for (k, v) in iter {
             self.insert(k, v);
         }
@@ -403,45 +420,64 @@ impl<K, V> Extend<(K, V)> for LinkedHashMap<K, V>
 }
 
 impl<K, V> Clone for LinkedHashMap<K, V>
-    where
-        K: Clone + Hash + Eq,
-        V: Clone,
+where
+    K: Clone + Hash + Eq,
+    V: Clone,
 {
     fn clone(&self) -> Self {
-        let mut map = LinkedHashMap::with_capacity_and_hasher(self.len(), self.hash_map.hasher().clone());
+        let mut map =
+            LinkedHashMap::with_capacity_and_hasher(self.len(), self.hash_map.hasher().clone());
         map.extend(self.iter().map(|(k, v)| (k.clone(), v.clone())));
         map
     }
 }
 
 impl<K, V> Debug for LinkedHashMap<K, V>
-    where
-        K: Debug + Hash + Eq,
-        V: Debug {
+where
+    K: Debug + Hash + Eq,
+    V: Debug,
+{
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_map().entries(self).finish()
     }
 }
 
 impl<K, V> PartialEq for LinkedHashMap<K, V>
-    where
-        K: Hash + Eq,
-        V: PartialEq {
+where
+    K: Hash + Eq,
+    V: PartialEq,
+{
     fn eq(&self, other: &Self) -> bool {
         self.len() == other.len() && self.iter().eq(other.iter())
     }
 }
 
 impl<K, V> Eq for LinkedHashMap<K, V>
-    where
-        K: Hash + Eq,
-        V: Eq {}
+where
+    K: Hash + Eq,
+    V: Eq,
+{
+}
 
-impl<K, V> Hash for LinkedHashMap<K, V> where K: Hash + Eq, V: Hash {
+impl<K, V> Hash for LinkedHashMap<K, V>
+where
+    K: Hash + Eq,
+    V: Hash,
+{
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.iter().for_each(|t| t.hash(state))
     }
 }
 
-unsafe impl<K, V> Sync for LinkedHashMap<K, V > where K: Sync, V: Sync {}
-unsafe impl<K, V> Send for LinkedHashMap<K, V> where K: Send, V: Send {}
+unsafe impl<K, V> Sync for LinkedHashMap<K, V>
+where
+    K: Sync,
+    V: Sync,
+{
+}
+unsafe impl<K, V> Send for LinkedHashMap<K, V>
+where
+    K: Send,
+    V: Send,
+{
+}
