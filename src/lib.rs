@@ -1,3 +1,24 @@
+//! #LinkedHashMap
+//!
+//! More: [LinkedHashMap] or [src/tests.rs](https://docs.rs/crate/linked-hash-map-rs/latest/source/src/tests.rs)
+//!
+//! ```rust
+//!
+//! use linked_hash_map_rs::LinkedHashMap;
+//!
+//! let mut map = LinkedHashMap::new();
+//! map.insert(1, "a");
+//! map.insert(2, "b");
+//! map.insert(3, "c");
+//! map.get_mut(&1).map(|v| *v = "A");
+//!
+//! assert_eq!(map.get(&1), Some(&"A"));
+//! assert_eq!(map.remove(&2), Some((2, "b")));
+//! assert_eq!(map.get(&2), None);
+//! assert_eq!(map.get(&3), Some(&"c"));
+//!
+//! ```
+
 #![allow(clippy::not_unsafe_ptr_arg_deref)]
 
 use std::borrow::Borrow;
