@@ -1,6 +1,6 @@
 [package]
 name = "linked-hash-map-rs"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2018"
 authors = ["soeur <juzi201314@gmail.com>"]
 description = "A linked hash map."
@@ -9,10 +9,17 @@ keywords = ["LinkedHashMap", "linked list", "hashmap"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = []
+
+[dependencies]
+serde = { version = "1.0", optional = true }
+
 [dev-dependencies]
 ahash = "0.7.4"
 linked-hash-map = "0.5.4"
 criterion = "0.3"
+serde_json = "1.0"
 
 [[bench]]
 name = "benchmark"

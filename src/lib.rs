@@ -9,6 +9,8 @@ use std::ptr::replace;
 
 #[cfg(test)]
 mod tests;
+#[cfg(feature = "serde")]
+mod serde;
 
 struct KeyPtr<K> {
     k: *const K,

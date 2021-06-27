@@ -118,3 +118,25 @@ fn test_debug() {
     map.insert(1, "a");
     assert_eq!(format!("{:?}", map), r###"{1: "a"}"###);
 }
+
+#[cfg(all(test, feature = "serde"))]
+mod test_serde {
+    use crate::LinkedHashMap;
+
+    const JSON: &'static str = r#"{"1":"a","2":"b"}"#;
+
+    #[test]
+    fn test_ser() {
+        let mut map = LinkedHashMap::new();
+        map.insert(1, "a");
+        map.insert(2, "b");
+        assert_eq!(serde_json::to_string(&map).unwrap().as_str(), JSON);
+    }
+
+    #[test]
+    fn test_de() {
+        let map = serde_json::from_str::<LinkedHashMap<i32, String>>(JSON).unwrap();
+        assert_eq!(map.front(), Some((&1i32, &"a".to_owned())));
+        assert_eq!(map.back(), Some((&2i32, &"b".to_owned())));
+    }
+}
