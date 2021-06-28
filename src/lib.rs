@@ -317,6 +317,11 @@ where
     }
 
     #[inline]
+    pub fn contains<Q: ?Sized>(&self, key: &Q) -> bool where K: Borrow<Q>, Q: Hash + Eq {
+        self.hash_map.contains_key(key)
+    }
+
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.hash_map.is_empty() && self.head.is_none() && self.tail.is_none()
     }
