@@ -92,7 +92,7 @@ fn test_insert_get_and_remove() {
     assert!(map.contains(&1));
 
     assert_eq!(map.remove(&2), Some((2, "b")));
-    assert_eq!(map.get(&2), None);
+    assert!(!map.contains(&2));
     assert_eq!(map.get(&3), Some(&"c"));
 }
 
@@ -112,6 +112,20 @@ fn test_take() {
     map.insert(1, "a");
     assert_eq!(map.take(&1), Some((1, "a")));
     assert!(map.is_empty());
+}
+
+#[test]
+fn test_pos() {
+    let mut map = LinkedHashMap::new();
+
+    map.insert(1, "a");
+    map.insert(2, "b");
+
+    *map.position_mut(1).unwrap().1 = "bb";
+
+    assert_eq!(map.position(0), Some((&1, &"a")));
+    assert_eq!(map.position(1), Some((&2, &"bb")));
+    assert_eq!(map.position(2), None);
 }
 
 #[test]

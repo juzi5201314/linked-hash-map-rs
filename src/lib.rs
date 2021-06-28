@@ -246,6 +246,11 @@ where
     }
 
     #[inline]
+    pub fn capacity(&self) -> usize {
+        self.hash_map.capacity()
+    }
+
+    #[inline]
     pub fn get<Q: ?Sized>(&self, key: &Q) -> Option<&V>
     where
         K: Borrow<Q>,
@@ -281,7 +286,7 @@ where
     }
 
     #[inline]
-    pub fn remove_node(&mut self, node: *mut Node<K, V>) {
+    fn remove_node(&mut self, node: *mut Node<K, V>) {
         unsafe {
             if let Some(head) = self.head {
                 if head == node {
@@ -324,6 +329,24 @@ where
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.hash_map.is_empty() && self.head.is_none() && self.tail.is_none()
+    }
+
+    #[inline]
+    pub fn position(&self, pos: usize) -> Option<(&K, &V)> {
+        let mut next = self.head;
+        for _ in 0..pos {
+            next = next.map(|node| unsafe { (*node).next }).flatten();
+        }
+        next.map(|ptr| unsafe { (&(*ptr).key, &(*ptr).value) })
+    }
+
+    #[inline]
+    pub fn position_mut(&mut self, pos: usize) -> Option<(&mut K, &mut V)> {
+        let mut next = self.head;
+        for _ in 0..pos {
+            next = next.map(|node| unsafe { (*node).next }).flatten();
+        }
+        next.map(|ptr| unsafe { (&mut (*ptr).key, &mut (*ptr).value) })
     }
 
     #[inline]
