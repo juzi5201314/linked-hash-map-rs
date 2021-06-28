@@ -89,6 +89,8 @@ fn test_insert_get_and_remove() {
     map.get_mut(&1).map(|v| *v = "A");
     assert_eq!(map.get(&1), Some(&"A"));
 
+    assert!(map.contains(&1));
+
     assert_eq!(map.remove(&2), Some((2, "b")));
     assert_eq!(map.get(&2), None);
     assert_eq!(map.get(&3), Some(&"c"));

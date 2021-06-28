@@ -318,7 +318,7 @@ where
 
     #[inline]
     pub fn contains<Q: ?Sized>(&self, key: &Q) -> bool where K: Borrow<Q>, Q: Hash + Eq {
-        self.hash_map.contains_key(key)
+        self.hash_map.contains_key(Qey::from_ref(key))
     }
 
     #[inline]
