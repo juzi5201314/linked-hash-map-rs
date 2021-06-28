@@ -1,6 +1,6 @@
 [package]
 name = "linked-hash-map-rs"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2018"
 authors = ["soeur <juzi201314@gmail.com>"]
 description = "A linked hash map."

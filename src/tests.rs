@@ -115,6 +115,21 @@ fn test_take() {
 }
 
 #[test]
+fn test_move() {
+    let mut map = LinkedHashMap::new();
+
+    map.insert(1, "a");
+    map.insert(2, "b");
+
+    assert_eq!(map.front(), Some((&1, &"a")));
+    map.move_to_front(&2);
+    assert_eq!(map.front(), Some((&2, &"b")));
+    assert_eq!(map.back(), Some((&1, &"a")));
+    map.move_to_back(&2);
+    assert_eq!(map.front(), Some((&1, &"a")));
+}
+
+#[test]
 fn test_pos() {
     let mut map = LinkedHashMap::new();
 

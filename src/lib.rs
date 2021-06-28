@@ -28,10 +28,10 @@ use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 use std::ptr::replace;
 
-#[cfg(test)]
-mod tests;
 #[cfg(feature = "serde")]
 mod serde;
+#[cfg(test)]
+mod tests;
 
 struct KeyPtr<K> {
     k: *const K,
@@ -139,21 +139,27 @@ where
                     key,
                     value,
                     prev: None,
-                    next: self.head,
+                    next: None,
                 });
 
                 self.hash_map.insert(KeyPtr { k: &(*node).key }, node);
-
-                let node = Some(node);
-                match self.head {
-                    None => self.tail = node,
-                    Some(head) => (*head).prev = node,
-                }
-
-                self.head = node;
+                self.push_front_node(node);
                 None
             }
         }
+    }
+
+    #[inline]
+    unsafe fn push_front_node(&mut self, node: *mut Node<K, V>) {
+        (*node).prev = None;
+        (*node).next = self.head;
+        let node = Some(node);
+        match self.head {
+            None => self.tail = node,
+            Some(head) => (*head).prev = node,
+        }
+
+        self.head = node;
     }
 
     #[inline]
@@ -195,20 +201,27 @@ where
                 let node = Node::into_ptr(Node {
                     key,
                     value,
-                    prev: self.tail,
+                    prev: None,
                     next: None,
                 });
                 self.hash_map.insert(KeyPtr { k: &(*node).key }, node);
-                let node = Some(node);
-                if let Some(tail) = self.tail {
-                    (*tail).next = node
-                } else {
-                    self.head = node;
-                }
-                self.tail = node;
+                self.push_back_node(node);
                 None
             }
         }
+    }
+
+    #[inline]
+    unsafe fn push_back_node(&mut self, node: *mut Node<K, V>) {
+        (*node).prev = self.tail;
+        (*node).next = None;
+        let node = Some(node);
+        if let Some(tail) = self.tail {
+            (*tail).next = node
+        } else {
+            self.head = node;
+        }
+        self.tail = node;
     }
 
     #[inline]
@@ -308,6 +321,36 @@ where
     }
 
     #[inline]
+    pub fn move_to_front<Q: ?Sized>(&mut self, key: &Q)
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq,
+    {
+        self.hash_map
+            .get(Qey::from_ref(key))
+            .map(|node| *node)
+            .map(|node| unsafe {
+                self.remove_node(node);
+                self.push_front_node(node);
+            });
+    }
+
+    #[inline]
+    pub fn move_to_back<Q: ?Sized>(&mut self, key: &Q)
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq,
+    {
+        self.hash_map
+            .get(Qey::from_ref(key))
+            .map(|node| *node)
+            .map(|node| unsafe {
+                self.remove_node(node);
+                self.push_back_node(node);
+            });
+    }
+
+    #[inline]
     pub fn take<Q: ?Sized>(&mut self, key: &Q) -> Option<(K, V)>
     where
         K: Borrow<Q>,
@@ -322,7 +365,11 @@ where
     }
 
     #[inline]
-    pub fn contains<Q: ?Sized>(&self, key: &Q) -> bool where K: Borrow<Q>, Q: Hash + Eq {
+    pub fn contains<Q: ?Sized>(&self, key: &Q) -> bool
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq,
+    {
         self.hash_map.contains_key(Qey::from_ref(key))
     }
 
@@ -526,6 +573,7 @@ where
     V: Sync,
 {
 }
+
 unsafe impl<K, V> Send for LinkedHashMap<K, V>
 where
     K: Send,
